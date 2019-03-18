@@ -1,0 +1,55 @@
+"""
+ÖNEMLİ NOT: Çalıştırdıktan sonra programı kapatmak için "Q" tuşuna basın.
+"""
+
+
+from skimage.measure import compare_ssim
+import argparse
+import imutils
+import cv2
+
+# Cascade yükleme
+face_cascade = cv2.CascadeClassifier('haarcascade-frontalface-default.xml')
+eye_cascade = cv2.CascadeClassifier('haarcascade-eye.xml')
+
+# Tanıma yapacak fonksiyon
+def detect(frame):
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    faces = face_cascade.detectMultiScale(gray, 1.3, 5)
+    for (x, y, w, h) in faces:
+        cv2.rectangle(frame, (x, y), (x+w, y+h), (255, 0, 0), 2)
+        roi_gray = gray[y:y+h, x:x+w]
+        roi_color = frame[y:y+h, x:x+w]
+        eyes = eye_cascade.detectMultiScale(roi_gray, 1.1, 3)
+        for (ex, ey, ew, eh) in eyes:
+            cv2.rectangle(roi_color, (ex, ey), (ex+ew, ey+eh), (0, 255, 0), 2)
+    return frame
+'''    
+def nesnetnm(frame):
+    gri = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    gri2 = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    (score, diff) = compare_ssim(gri, gri2, full=True)
+    diff = (diff * 255).astype()
+    thresh = cv2.threshold(diff, 0, 255,
+                           cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)[1]
+    cvr = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL,
+                            cv2.CHAIN_APPROX_SIMPLE)
+    cvr = imutils.grab_contours(cvr)
+
+    for c in cvr:
+        (x, y, w, h) = cv2.boundingRect(c)
+        cv2.rectangle(gri, (x, y), (x + w, y + h), (0, 0, 255), 2)
+    return frame
+
+
+video_capture = cv2.VideoCapture(0)
+while True:
+    _, frame = video_capture.read()
+    canvas = detect(frame)
+
+    cv2.imshow('Video', canvas)
+
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+video_capture.release()
+cv2.destroyAllWindows()
